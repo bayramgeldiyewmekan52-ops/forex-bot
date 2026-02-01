@@ -69,4 +69,3 @@ def welcome(message):
 
 print("Bot yeni özelliklerle aktif...")
 bot.polling()
-        
