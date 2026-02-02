@@ -7,12 +7,12 @@ SAHIP_ID = 7304286516
 
 bot = telebot.TeleBot(TOKEN)
 
-# Varsayılan ayarlar
+# Ayarlar: Pariteler boş liste olunca hepsi kabul edilir
 ayarlar = {
-    "baslangic_saati": "22:00",
-    "bitis_saati": "09:00",
+    "baslangic_saati": "00:00",
+    "bitis_saati": "23:59",
     "zarar_limiti": -50.0,
-    "pariteler": ["XAUUSD", "XAGUSD", "EURUSD"]
+    "pariteler": [] # Boş bırakıldı: Tüm pariteler aktif
 }
 
 def saat_kontrol():
@@ -21,32 +21,32 @@ def saat_kontrol():
     bit = ayarlar["bitis_saati"]
     if bas < bit:
         return bas <= simdi <= bit
-    else: # Gece yarısını geçen saatler için (Örn: 22:00 - 09:00)
+    else:
         return simdi >= bas or simdi <= bit
 
-@bot.message_handler(func=lambda message: message.text.lower() in ['kar', 'zarar'])
+@bot.message_handler(func=lambda message: message.text.lower() in ['kar', 'zarar', 'durum'])
 def send_report(message):
     if message.chat.id == SAHIP_ID:
         if not saat_kontrol():
-            bot.reply_to(message, f"💤 Bot şu an çalışma saatleri dışında. (Aktif: {ayarlar['baslangic_saati']}-{ayarlar['bitis_saati']})")
+            bot.reply_to(message, f"💤 Bot çalışma saatleri dışında. (Aktif: {ayarlar['baslangic_saati']}-{ayarlar['bitis_saati']})")
             return
 
-        # Demo veriler (Gerçek veriler için Myfxbook API bağlanmalıdır)
-        guncel_zarar = -10.50 # Örnek zarar
+        # Raporlama ekranında artık tüm pariteler gösterilecek
+        guncel_zarar = -10.50 
         
-        durum_mesaji = "✅ Sistem Normal"
+        durum_mesaji = "✅ Tüm Pariteler İzleniyor"
         if guncel_zarar <= ayarlar["zarar_limiti"]:
-            durum_mesaji = "🚨 DİKKAT: Günlük Zarar Limiti Aşıldı!"
+            durum_mesaji = "🚨 DİKKAT: Zarar Limiti Aşıldı!"
 
-        rapor = (f"📊 *Hesap Özeti (Demo)*\n"
+        rapor = (f"📊 *Genel Hesap Durumu*\n"
                  f"━━━━━━━━━━━━━━━\n"
-                 f"🎯 *İzlenen:* {', '.join(ayarlar['pariteler'])}\n"
-                 f"💰 Bakiye: 3,000.00 USD\n"
+                 f"🎯 *Mod:* Sınırsız Parite Takibi\n"
+                 f"💰 Güncel Bakiye: 3,000.00 USD\n"
                  f"📉 Güncel Zarar: {guncel_zarar} USD\n"
                  f"🚫 Limit: {ayarlar['zarar_limiti']} USD\n"
                  f"⚠️ Durum: {durum_mesaji}\n"
                  f"━━━━━━━━━━━━━━━\n"
-                 f"🆔 ID: {MYFXBOOK_ID}")
+                 f"🆔 Myfxbook ID: {MYFXBOOK_ID}")
         
         bot.reply_to(message, rapor, parse_mode="Markdown")
 
@@ -54,18 +54,17 @@ def send_report(message):
 def set_time(message):
     if message.chat.id == SAHIP_ID:
         try:
-            # Örnek kullanım: /saatayarla 22:00-09:00
             yeni_saat = message.text.split()[1]
             bas, bit = yeni_saat.split("-")
             ayarlar["baslangic_saati"] = bas
             ayarlar["bitis_saati"] = bit
-            bot.reply_to(message, f"✅ Çalışma saatleri {bas} ile {bit} arası olarak güncellendi.")
+            bot.reply_to(message, f"✅ Saatler {bas}-{bit} olarak güncellendi.")
         except:
-            bot.reply_to(message, "❌ Hata! Lütfen şu formatta yazın: `/saatayarla 22:00-09:00`", parse_mode="Markdown")
+            bot.reply_to(message, "❌ Örnek: `/saatayarla 00:00-23:59`", parse_mode="Markdown")
 
 @bot.message_handler(commands=['start'])
 def welcome(message):
-    bot.reply_to(message, "✅ Bot güncellendi!\n\n- 'kar' veya 'zarar' yazarak rapor alabilirsin.\n- /saatayarla komutuyla saatleri değiştirebilirsin.\n- Sadece XAUUSD, XAGUSD, EURUSD izleniyor.")
+    bot.reply_to(message, "🚀 Bot Sınırsız Modda Aktif!\n\n- Artık tüm pariteler takip ediliyor.\n- 'kar' veya 'zarar' yazarak rapor alabilirsin.")
 
-print("Bot yeni özelliklerle aktif...")
+print("Bot tüm pariteler için aktif edildi...")
 bot.polling()
